@@ -1,17 +1,21 @@
-import { httpServer,socketServer } from "./config/server.js";
-import { createSocketClient } from "./config/socket.client.js";
-import { 
-    socketServerConnection,
-    socketClientConnection 
-} from "./handlers/socket.handler.js";
+import { connectToMongoDB } from "./config/config.mongo.js";
+import { httpServer, socketServer } from "./config/config.server.js";
+import { createSocketClient } from "./config/config.client.js";
+import { socketServerConnection, socketClientConnection } from "./handlers/handler.socket.js";
+import { validatePort } from "./validators/validator.cmd.js";
+import { authenticateUser } from "./handlers/handler.mongo.js";
 
 const arg = process.argv.slice(2);
-const [ userName,senderPort,receiverPort ] = [ arg[0],arg[1],arg[2] ];
+const [senderPort, receiverPort, contactNumber] = [arg[0], arg[1], arg[2]];
+validatePort(senderPort, receiverPort);
+
+await connectToMongoDB();
+const userName = await authenticateUser(contactNumber);
 const socketClient = createSocketClient(receiverPort, userName);
 
-socketServer.on("connection",(socket) => socketServerConnection(socket));
+socketServer.on("connection", (socket) => socketServerConnection(socket));
 socketClient.on("connect", async () => socketClientConnection(socketClient));
 
 httpServer.listen(senderPort, () => {
-    console.log(`server started on port ${senderPort}`);
+    console.log(`message: server started on port ${senderPort}`);
 });

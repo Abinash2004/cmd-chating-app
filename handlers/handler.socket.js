@@ -1,5 +1,5 @@
-import { readlineClient } from "../config/readline.js";
-import { httpServer } from "../config/server.js";
+import { httpServer } from "../config/config.server.js";
+import { askQuestion } from "../utils/utils.readline.js";
 
 function socketServerConnection(socket) {
     const { clientUserName } = socket.handshake.auth;
@@ -9,23 +9,19 @@ function socketServerConnection(socket) {
         console.log(`${clientUserName}: ${message}`);
     });
     
-    socket.on("disconnect",() => {
+    socket.on("disconnect", () => {
         console.log(`${clientUserName} Disconnected.`);
     });
 }
 
 async function socketClientConnection(socketClient) {
     while (true) {
-        const inputMessage = await new Promise((resolve) => {
-            readlineClient.question("", resolve);
-        });
-        
+        const inputMessage = await askQuestion("");
         if (inputMessage === "quit") {
             socketClient.disconnect();
             httpServer.close();
             process.exit(0);
         }
-        
         socketClient.emit("message", inputMessage);
     }
 }
