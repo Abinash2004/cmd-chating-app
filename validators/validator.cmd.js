@@ -3,10 +3,10 @@ function validateContactNumber(contactNumber) {
         console.error("error: invalid contact number.");
         process.exit(1);
     }
-    console.log("message: contact number validated successfully.");
+    console.log("log: contact number validated successfully.");
 }
 
-async function validatePort(port1,port2) {
+function validatePort(port1,port2) {
     const p1 = Number(port1);
     const p2 = Number(port2);
 
@@ -21,7 +21,7 @@ async function validatePort(port1,port2) {
         process.exit(1);
     }
     
-    console.log("message: ports validated successfully.");
+    console.log("log: ports validated successfully.");
 }
 
 export { 

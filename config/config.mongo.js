@@ -6,7 +6,7 @@ dotenv.config({quiet: true});
 async function connectToMongoDB() {
     try {
         await mongoose.connect(process.env.mongoURI);
-        console.log("message: mongoDB connected successfully.");
+        console.log("log: mongoDB connected successfully.");
     } catch(err) {
         console.error(`error: ${err.message}.`);
         process.exit(1);

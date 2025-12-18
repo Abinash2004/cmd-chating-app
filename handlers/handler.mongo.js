@@ -18,7 +18,7 @@ async function authenticateUser(contactNumber) {
                 process.exit(1);
             }
             
-            console.log(`message: authenticated user successfully.`);
+            console.log(`log: authenticated user successfully.`);
             return user.userName;
         }
 
@@ -28,7 +28,7 @@ async function authenticateUser(contactNumber) {
 
         await User.create({ userName, password: hashedPassword, contactNumber });
         
-        console.log(`message: authenticated user successfully.`);
+        console.log(`log: authenticated user successfully.`);
         return userName;
 
     } catch (err) {
@@ -56,7 +56,30 @@ async function addMessage(senderContactNumber, receiverContactNumber, message) {
     }
 }
 
+async function getConversation(senderContactNumber, receiverContactNumber, receiverUserName) {
+    try {
+        const id = (senderContactNumber > receiverContactNumber) ? 
+        receiverContactNumber + senderContactNumber : 
+        senderContactNumber + receiverContactNumber;
+
+        const conversation = await Conversation.findOne({id});
+        if (!conversation) {
+            console.log("message: no past conversation exists.");
+            return;
+        }
+        
+        console.log("\nCONVERSATION:");
+        conversation.conversation.map((chat) => {
+            console.log(`${(chat.senderContactNumber === senderContactNumber) ? "You" : receiverUserName} : ${chat.message}`);
+        });
+        console.log("\n");
+    } catch(err) {
+        console.error(`error: ${err.message}`);
+    }
+}
+
 export { 
     authenticateUser,
-    addMessage
+    addMessage,
+    getConversation
 };
