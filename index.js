@@ -11,10 +11,10 @@ validatePort(senderPort, receiverPort);
 
 await connectToMongoDB();
 const userName = await authenticateUser(contactNumber);
-const socketClient = createSocketClient(receiverPort, userName);
+const socketClient = createSocketClient(receiverPort, userName, contactNumber);
 
 socketServer.on("connection", (socket) => socketServerConnection(socket));
-socketClient.on("connect", async () => socketClientConnection(socketClient));
+socketClient.on("connect", async () => socketClientConnection(socketClient, contactNumber));
 
 httpServer.listen(senderPort, () => {
     console.log(`message: server started on port ${senderPort}`);

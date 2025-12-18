@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { User } from "../model/model.user.js";
+import { Conversation } from "../model/model.conversation.js"
 import { validateContactNumber } from "../validators/validator.cmd.js";
 import { askQuestion } from "../utils/utils.readline.js";
 
@@ -36,4 +37,26 @@ async function authenticateUser(contactNumber) {
     }
 }
 
-export { authenticateUser };
+async function addMessage(senderContactNumber, receiverContactNumber, message) {
+    try {
+        const id = (senderContactNumber > receiverContactNumber) ? 
+        receiverContactNumber + senderContactNumber : 
+        senderContactNumber + receiverContactNumber;
+
+        const msgObj = {senderContactNumber,message};
+
+        const conversation = await Conversation.findOne({id});
+        if (conversation) {
+            await Conversation.updateOne({id},{$push: {conversation: msgObj}});
+        } else {
+            await Conversation.create({id,conversation: [msgObj]});
+        }
+    } catch(err) {
+        console.error(`error: ${err.message}`);
+    }
+}
+
+export { 
+    authenticateUser,
+    addMessage
+};
