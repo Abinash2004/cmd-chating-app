@@ -72,7 +72,7 @@ async function getConversation(senderContactNumber, receiverContactNumber, recei
         conversation.conversation.map((chat) => {
             console.log(`${(chat.senderContactNumber === senderContactNumber) ? "You" : receiverUserName} : ${chat.message}`);
         });
-        console.log("\n");
+        console.log();
     } catch(err) {
         console.error(`error: ${err.message}`);
     }
