@@ -15,7 +15,7 @@ async function switchSocketClient(userName, contactNumber, senderPort, receiverP
     
     const socketClient = createSocketClient(switchPort, userName);
     socketClient.on("connect", async () => {
-        await socketClientConnection(socketClient, userName, contactNumber, senderPort);
+        await socketClientConnection(socketClient, userName, contactNumber, senderPort, switchPort);
     });
 }
 

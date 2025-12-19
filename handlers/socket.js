@@ -3,6 +3,7 @@ import { askQuestion } from "../utils/readline.js";
 import { switchSocketClient } from "../utils/client.switch.js";
 import { addMessage, getConversation } from "./mongo.js";
 import { requestUserInfo } from "../utils/client.emissions.js";
+import { sendToQueue } from "../config/rabbitmq.js";
 
 function socketServerConnection(socket, userName, contactNumber) {
     const { clientUserName } = socket.handshake.auth;
@@ -21,7 +22,7 @@ function socketServerConnection(socket, userName, contactNumber) {
     });
 }
 
-async function socketClientConnection(socketClient, senderUsername, senderContactNumber, senderPort) {
+async function socketClientConnection(socketClient, senderUsername, senderContactNumber, senderPort, receiverPort) {
     const { peerUserName, peerContactNumber } = await requestUserInfo(socketClient);
     console.log(`message: your messages will be sent to ${peerUserName}.`);
     while (true) {
@@ -37,8 +38,22 @@ async function socketClientConnection(socketClient, senderUsername, senderContac
             switchSocketClient(senderUsername, senderContactNumber, senderPort, null);
             return;
         } else {
-            socketClient.emit("message", inputMessage);
-            await addMessage(senderContactNumber,peerContactNumber,inputMessage);
+            try {
+                if (socketClient && socketClient.connected) {
+                    socketClient.emit("message", inputMessage);
+                } else {
+                    await sendToQueue(`chat_${receiverPort}`, {
+                        senderPort,
+                        message: inputMessage,
+                        createdAt: new Date()
+                    });
+                    console.log("message: user offline, saved to queue.");
+                }
+            } catch (err) {
+                console.error("error sending message:", err.message);
+            } finally {
+                await addMessage(senderContactNumber, peerContactNumber, inputMessage);
+            }
         }
     }
 }
