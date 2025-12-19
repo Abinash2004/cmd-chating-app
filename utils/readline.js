@@ -1,4 +1,4 @@
-import { readlineClient } from "../config/config.readline.js";
+import { readlineClient } from "../config/readline.js";
 
 async function askQuestion(query) {
     return await new Promise((resolve) => {

@@ -1,8 +1,8 @@
-import { httpServer } from "../config/config.server.js";
-import { askQuestion } from "../utils/utils.readline.js";
-import { switchSocketClient } from "../utils/utils.client.switch.js";
-import { addMessage, getConversation } from "./handler.mongo.js";
-import { requestUserInfo } from "../utils/utils.client.emissions.js";
+import { httpServer } from "../config/server.js";
+import { askQuestion } from "../utils/readline.js";
+import { switchSocketClient } from "../utils/client.switch.js";
+import { addMessage, getConversation } from "./mongo.js";
+import { requestUserInfo } from "../utils/client.emissions.js";
 
 function socketServerConnection(socket, userName, contactNumber) {
     const { clientUserName } = socket.handshake.auth;

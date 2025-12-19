@@ -1,7 +1,7 @@
-import { socketClientConnection } from "../handlers/handler.socket.js";
-import { createSocketClient } from "../config/config.client.js";
-import { askQuestion } from "./utils.readline.js";
-import { validatePort } from "../validators/validator.cmd.js";
+import { socketClientConnection } from "../handlers/socket.js";
+import { createSocketClient } from "../config/client.js";
+import { askQuestion } from "./readline.js";
+import { validatePort } from "../validators/cmd.js";
 
 async function switchSocketClient(userName, contactNumber, senderPort, receiverPort) {
     let switchPort;

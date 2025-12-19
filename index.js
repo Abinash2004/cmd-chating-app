@@ -1,9 +1,9 @@
-import { connectToMongoDB } from "./config/config.mongo.js";
-import { httpServer, socketServer } from "./config/config.server.js";
-import { socketServerConnection } from "./handlers/handler.socket.js";
-import { validatePort } from "./validators/validator.cmd.js";
-import { authenticateUser } from "./handlers/handler.mongo.js";
-import { switchSocketClient } from "./utils/utils.client.switch.js";
+import { connectToMongoDB } from "./config/mongo.js";
+import { httpServer, socketServer } from "./config/server.js";
+import { socketServerConnection } from "./handlers/socket.js";
+import { validatePort } from "./validators/cmd.js";
+import { authenticateUser } from "./handlers/mongo.js";
+import { switchSocketClient } from "./utils/client.switch.js";
 
 const arg = process.argv.slice(2);
 const [senderPort, receiverPort, contactNumber] = [arg[0], arg[1], arg[2]];
