@@ -16,14 +16,38 @@ async function connectRabbitMQ() {
 async function sendToQueue(queue, message) {
     try {
         await channel.assertQueue(queue, { durable: true });
-        channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), { persistent: true });
+        channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)),{ persistent: true });
     } catch (err) {
         console.error(`error: ${err.message}`);
     }
 }
 
+async function sendDelayed(queue, message, delayMs) {
+    const delayQueue = `${queue}_delay_${delayMs}`;
+
+    await channel.assertExchange("dlx", "direct", { durable: true });
+
+    await channel.assertQueue(delayQueue, {
+        durable: true,
+        arguments: {
+            "x-message-ttl": delayMs,
+            "x-dead-letter-exchange": "dlx",
+            "x-dead-letter-routing-key": queue
+        }
+    });
+
+    await channel.assertQueue(queue, { durable: true });
+    await channel.bindQueue(queue, "dlx", queue);
+
+    channel.sendToQueue(
+        delayQueue,
+        Buffer.from(JSON.stringify(message)),
+        { persistent: true }
+    );
+}
+
 async function consumeQueue(queue, callback) {
-    try{
+    try {
         await channel.assertQueue(queue, { durable: true });
         channel.consume(queue, (msg) => {
             if (msg !== null) {
@@ -37,4 +61,9 @@ async function consumeQueue(queue, callback) {
     }
 }
 
-export { connectRabbitMQ, sendToQueue, consumeQueue };
+export {
+    connectRabbitMQ,
+    sendToQueue,
+    sendDelayed,
+    consumeQueue
+};

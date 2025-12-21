@@ -20,7 +20,7 @@ await switchSocketClient(userName, contactNumber, senderPort, receiverPort);
 
 httpServer.listen(senderPort, async () => {
     console.log(`message: server started on port ${senderPort}`);
-    console.log(`\nCOMMANDS:\n/quit - end conversation\n/past - get pass messages.\n/switch - change receiver port.\n`);
+    console.log(`\nCOMMANDS:\n/quit - end conversation\n/past - get pass messages.\n/switch - change receiver port.\n/schedule - send message with delay.\n`);
     console.log(`message: waiting for peer server on port ${receiverPort}...`);
     await listenOfflineMessages(senderPort);
 });

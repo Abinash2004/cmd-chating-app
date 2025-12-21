@@ -3,7 +3,8 @@ import { askQuestion } from "../utils/readline.js";
 import { switchSocketClient } from "../utils/client.switch.js";
 import { addMessage, getConversation } from "./mongo.js";
 import { requestUserInfo } from "../utils/client.emissions.js";
-import { sendToQueue } from "../config/rabbitmq.js";
+import { sendToQueue, sendDelayed } from "../config/rabbitmq.js";
+import { sendDelayMessage } from "./rabbitmq.js";
 
 function socketServerConnection(socket, userName, contactNumber) {
     const { clientUserName } = socket.handshake.auth;
@@ -37,7 +38,11 @@ async function socketClientConnection(socketClient, senderUsername, senderContac
             socketClient.disconnect();
             switchSocketClient(senderUsername, senderContactNumber, senderPort, null);
             return;
-        } else {
+        } else if (inputMessage === "/schedule") {
+            await sendDelayMessage(senderPort,receiverPort);
+            await addMessage(senderContactNumber, peerContactNumber, inputMessage);
+        }
+        else {
             try {
                 if (socketClient && socketClient.connected) {
                     socketClient.emit("message", inputMessage);
