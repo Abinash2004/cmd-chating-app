@@ -1,4 +1,5 @@
 import amqp from "amqplib";
+import { log, error } from "./chalk.js";
 
 let channel;
 
@@ -6,19 +7,19 @@ async function connectRabbitMQ() {
     try {
         const connection = await amqp.connect("amqp://localhost:5672");
         channel = await connection.createChannel();
-        console.log("log: rabbitMQ connected successfully.");
+        console.log(`${log("log")}: rabbitMQ connected successfully.`);
         return channel;
     } catch (err) {
-        console.error(`error: ${err.message}`);
+        console.error(`${error("error")}: ${err.message}`);
     }
 }
 
 async function sendToQueue(queue, message) {
     try {
         await channel.assertQueue(queue, { durable: true });
-        channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)),{ persistent: true });
+        channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), { persistent: true });
     } catch (err) {
-        console.error(`error: ${err.message}`);
+        console.error(`${error("error")}: ${err.message}`);
     }
 }
 
@@ -57,7 +58,7 @@ async function consumeQueue(queue, callback) {
             }
         });
     } catch (err) {
-        console.error(`error: ${err.message}`);
+        console.error(`${error("error")}: ${err.message}`);
     }
 }
 

@@ -5,6 +5,7 @@ import { validatePort } from "./validators/cmd.js";
 import { authenticateUser } from "./handlers/mongo.js";
 import { connectRabbitMQ } from "./config/rabbitmq.js";
 import { listenOfflineMessages } from "./handlers/rabbitmq.js";
+import { message, blue } from "./config/chalk.js";
 
 const arg = process.argv.slice(2);
 const [senderPort, receiverPort, contactNumber] = [arg[0], arg[1], arg[2]];
@@ -18,8 +19,8 @@ socketServer.on("connection", (socket) => socketServerConnection(socket, userNam
 await socketClientConnection(userName, contactNumber, senderPort, receiverPort);
 
 httpServer.listen(senderPort, async () => {
-    console.log(`message: server started on port ${senderPort}`);
-    console.log(`\nCOMMANDS:\n/quit - end conversation\n/past - get pass messages.\n/switch - change receiver port.\n/schedule - send message with delay.\n`);
-    console.log(`message: waiting for peer server on port ${receiverPort}...`);
+    console.log(`${message("message")}: server started on port ${senderPort}`);
+    console.log(`\n${message("COMMANDS:")}\n${blue("/quit")} - end conversation\n${blue("/past")} - get past messages\n${blue("/switch")} - change receiver port\n${blue("/schedule")} - send message with delay\n`);
+    console.log(`${message("message")}: waiting for peer server on port ${receiverPort}...`);
     await listenOfflineMessages(senderPort);
 });

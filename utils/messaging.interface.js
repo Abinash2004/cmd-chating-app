@@ -5,10 +5,12 @@ import { requestUserInfo } from "./client.emissions.js";
 import { sendToQueue } from "../config/rabbitmq.js";
 import { sendDelayMessage } from "../handlers/rabbitmq.js";
 import { socketClientConnection } from "../handlers/socket.js";
+import { message, error } from "../config/chalk.js";
 
 async function startMessagingInterface(socketClient, senderUsername, senderContactNumber, senderPort, receiverPort) {
     let peerUserName = null;
     let peerContactNumber = null;
+
     while (true) {
         const isSocketClientConnected = socketClient?.connected === true;
         
@@ -17,19 +19,20 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
             peerUserName = name;
             peerContactNumber = number;
         }
+
         const inputMessage = await askQuestion("");
-        
+
         if (inputMessage === "/quit") {
             if (isSocketClientConnected) socketClient.disconnect();
             httpServer.close();
             process.exit(0);
-        } 
+        }
         
         else if (inputMessage === "/past") {
             if (isSocketClientConnected) {
                 await getConversation(senderContactNumber, peerContactNumber, peerUserName);
             } else {
-                console.log("message: cilent credentials are missing, client must be offline.");
+                console.log(`${message("message")}: client credentials are missing, client must be offline.`);
             }
         } 
         
@@ -40,12 +43,12 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
         } 
         
         else if (inputMessage === "/schedule") {
-            await sendDelayMessage(senderPort,receiverPort);
+            await sendDelayMessage(senderPort, receiverPort);
             if (isSocketClientConnected) {
                 await addMessage(senderContactNumber, peerContactNumber, inputMessage);
             }
         }
-        
+
         else {
             try {
                 if (isSocketClientConnected) {
@@ -56,10 +59,10 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
                         message: inputMessage,
                         createdAt: new Date()
                     });
-                    console.log("message: user offline, saved to queue.");
+                    console.log(`${message("message")}: user offline, saved to queue.`);
                 }
             } catch (err) {
-                console.error("error sending message:", err.message);
+                console.error(`${error("error")}: ${err.message}`);
             } finally {
                 if (isSocketClientConnected) {   
                     await addMessage(senderContactNumber, peerContactNumber, inputMessage);
