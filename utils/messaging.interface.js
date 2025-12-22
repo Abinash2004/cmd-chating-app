@@ -2,10 +2,10 @@ import { httpServer } from "../config/server.js";
 import { askQuestion } from "./readline.js";
 import { addMessage, getConversation } from "../handlers/mongo.js";
 import { requestUserInfo } from "./client.emissions.js";
-import { sendToQueue } from "../config/rabbitmq.js";
+import { sendToQueue, joinChatRoom, consumeChatQueue, sendToChatRoom } from "../config/rabbitmq.js";
 import { sendDelayMessage } from "../handlers/rabbitmq.js";
 import { socketClientConnection } from "../handlers/socket.js";
-import { message, error } from "../config/chalk.js";
+import { message, error, green } from "../config/chalk.js";
 
 async function startMessagingInterface(socketClient, senderUsername, senderContactNumber, senderPort, receiverPort) {
     let peerUserName = null;
@@ -48,6 +48,12 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
                 await addMessage(senderContactNumber, peerContactNumber, inputMessage);
             }
         }
+        
+        else if (inputMessage === "/room") {
+            if (isSocketClientConnected) socketClient.disconnect();
+            roomMessagingInterface(senderUsername, senderContactNumber, senderPort, receiverPort);
+            return;
+        }
 
         else {
             try {
@@ -68,6 +74,33 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
                     await addMessage(senderContactNumber, peerContactNumber, inputMessage);
                 }
             }
+        }
+    }
+}
+
+async function roomMessagingInterface(userName, contactNumber, senderPort, receiverPort) {
+    const userQueue = `user_${userName}_${contactNumber}`;
+    await joinChatRoom(userQueue);
+
+    consumeChatQueue(userQueue, (msg) => {
+        if (msg.senderContactNumber !== contactNumber) {
+            console.log(`${green(msg.senderUsername)}: ${msg.message}`);
+        }
+    });
+
+    while (true) {
+        const inputMessage = await askQuestion("");
+
+        if (inputMessage === "/quit") {
+            socketClientConnection(userName, contactNumber, senderPort, receiverPort);
+            return;
+        } else {
+            await sendToChatRoom({
+                senderUsername: userName,
+                senderContactNumber: contactNumber,
+                message: inputMessage,
+                createdAt: new Date()
+            });
         }
     }
 }

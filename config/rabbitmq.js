@@ -62,9 +62,37 @@ async function consumeQueue(queue, callback) {
     }
 }
 
+async function joinChatRoom(userQueue) {
+    const exchange = "chat_room";
+    await channel.assertExchange(exchange, "fanout", { durable: true });
+    await channel.assertQueue(userQueue, { durable: true });
+    await channel.bindQueue(userQueue, exchange, "");
+    return { exchange, userQueue };
+}
+
+async function sendToChatRoom(message) {
+    const exchange = "chat_room";
+    await channel.assertExchange(exchange, "fanout", { durable: true });
+    channel.publish(exchange, "", Buffer.from(JSON.stringify(message)));
+}
+
+async function consumeChatQueue(userQueue, callback) {
+    await channel.assertQueue(userQueue, { durable: true });
+    channel.consume(userQueue, (msg) => {
+        if (msg) {
+            const data = JSON.parse(msg.content.toString());
+            callback(data);
+            channel.ack(msg);
+        }
+    });
+}
+
 export {
     connectRabbitMQ,
     sendToQueue,
     sendDelayed,
-    consumeQueue
+    consumeQueue,
+    joinChatRoom,
+    sendToChatRoom,
+    consumeChatQueue
 };
