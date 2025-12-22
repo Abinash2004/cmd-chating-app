@@ -1,9 +1,8 @@
 import { connectToMongoDB } from "./config/mongo.js";
 import { httpServer, socketServer } from "./config/server.js";
-import { socketServerConnection } from "./handlers/socket.js";
+import { socketClientConnection, socketServerConnection } from "./handlers/socket.js";
 import { validatePort } from "./validators/cmd.js";
 import { authenticateUser } from "./handlers/mongo.js";
-import { switchSocketClient } from "./utils/client.switch.js";
 import { connectRabbitMQ } from "./config/rabbitmq.js";
 import { listenOfflineMessages } from "./handlers/rabbitmq.js";
 
@@ -16,7 +15,7 @@ await connectRabbitMQ();
 const userName = await authenticateUser(contactNumber);
 
 socketServer.on("connection", (socket) => socketServerConnection(socket, userName, contactNumber));
-await switchSocketClient(userName, contactNumber, senderPort, receiverPort);
+await socketClientConnection(userName, contactNumber, senderPort, receiverPort);
 
 httpServer.listen(senderPort, async () => {
     console.log(`message: server started on port ${senderPort}`);
