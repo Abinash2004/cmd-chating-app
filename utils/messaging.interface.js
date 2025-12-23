@@ -1,12 +1,16 @@
-import { httpServer } from "../config/server.js";
 import { askQuestion } from "./readline.js";
-import bcrypt from "bcrypt";
-import { addMessage, createRoom, getAvailableRooms, getConversation } from "../handlers/mongo.js";
 import { requestUserInfo } from "./client.emissions.js";
-import { sendToQueue, joinChatRoom, consumeChatQueue, sendToChatRoom } from "../config/rabbitmq.js";
-import { sendDelayMessage } from "../handlers/rabbitmq.js";
+import { joinChatRoom, consumeChatQueue, sendToChatRoom } from "../config/rabbitmq.js";
 import { socketClientConnection } from "../handlers/socket.js";
-import { message, error, green } from "../config/chalk.js";
+import { green,blue } from "../config/chalk.js";
+import { 
+    messagingPast,
+    messagingQuit,
+    messagingSwitch,
+    messagingSchedule,
+    messagingCreateRoom,
+    messagingJoinRoom,
+    sendMessage } from "./messaging.helper.js";
 
 async function startMessagingInterface(socketClient, senderUsername, senderContactNumber, senderPort, receiverPort) {
     let peerUserName = null;
@@ -23,93 +27,52 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
 
         const inputMessage = await askQuestion("");
 
-        if (inputMessage === "/quit") {
-            if (isSocketClientConnected) socketClient.disconnect();
-            httpServer.close();
-            process.exit(0);
+        if (inputMessage === "/exit") {
+            messagingQuit(isSocketClientConnected, socketClient);
         }
         
-        else if (inputMessage === "/past") {
-            if (isSocketClientConnected) {
-                await getConversation(senderContactNumber, peerContactNumber, peerUserName);
-            } else {
-                console.log(`${message("message")}: client credentials are missing, client must be offline.`);
-            }
+        else if (inputMessage === "/history") {
+            await messagingPast(isSocketClientConnected, senderContactNumber, peerContactNumber, peerUserName);
         } 
         
         else if (inputMessage === "/switch") {
-            if (isSocketClientConnected) socketClient.disconnect();
-            socketClientConnection(senderUsername, senderContactNumber, senderPort, null);
+            await messagingSwitch(isSocketClientConnected, socketClient, senderUsername, senderContactNumber, senderPort);
             return;
         } 
         
         else if (inputMessage === "/schedule") {
-            await sendDelayMessage(senderPort, receiverPort);
-            if (isSocketClientConnected) {
-                await addMessage(senderContactNumber, peerContactNumber, inputMessage);
-            }
+            await messagingSchedule(isSocketClientConnected, senderUsername, senderPort, receiverPort, senderContactNumber, peerContactNumber, inputMessage);
         }
         
         else if (inputMessage === "/create_room") {
-            const roomName = await askQuestion("enter your room name: ");
-            const password = await askQuestion("create password to your room (if not then enter <null>): ");
-            createRoom(roomName,password);
+            await messagingCreateRoom();
         }
         
         else if (inputMessage === "/join_room") {
-            const room = await getAvailableRooms();
-            if (room === null) continue;
-
-            if (room.password !== "null") {
-                const password = await askQuestion(`enter password for ${room.roomName} chat room: `);
-
-                if (!(await bcrypt.compare(password, room.password))) {
-                    console.error(`${error("error")}: invalid password.`);
-                    continue;
-                }
-            }
-
-            if (isSocketClientConnected) socketClient.disconnect();
-            roomMessagingInterface(senderUsername,senderContactNumber,senderPort,receiverPort,room.exchangeId);
-            return;
+            const operation = await messagingJoinRoom(isSocketClientConnected, socketClient, senderUsername, senderContactNumber, senderPort, receiverPort);
+            if (operation === "continue") continue;
+            if (operation === "return") return;
         }
 
         else {
-            try {
-                if (isSocketClientConnected) {
-                    socketClient.emit("message", inputMessage);
-                } else {
-                    await sendToQueue(`chat_${receiverPort}`, {
-                        senderPort,
-                        message: inputMessage,
-                        createdAt: new Date()
-                    });
-                    console.log(`${message("message")}: user offline, saved to queue.`);
-                }
-            } catch (err) {
-                console.error(`${error("error")}: ${err.message}`);
-            } finally {
-                if (isSocketClientConnected) {   
-                    await addMessage(senderContactNumber, peerContactNumber, inputMessage);
-                }
-            }
+            await sendMessage(isSocketClientConnected, socketClient, receiverPort, senderPort, inputMessage, senderContactNumber, senderUsername, peerContactNumber);
         }
     }
 }
 
-async function roomMessagingInterface(userName, contactNumber, senderPort, receiverPort, exchangeId) {
+async function roomMessagingInterface(userName, contactNumber, senderPort, receiverPort, roomName, exchangeId) {
     const userQueue = `user_${userName}_${contactNumber}_${exchangeId}`;
     await joinChatRoom(userQueue, exchangeId);
 
     consumeChatQueue(userQueue, (msg) => {
         if (msg.senderContactNumber !== contactNumber) {
-            console.log(`${green(msg.senderUsername)}: ${msg.message}`);
+            console.log(`[${blue(roomName)}] ${green(msg.senderUsername)}: ${msg.message}`);
         }
     });
 
     while (true) {
         const inputMessage = await askQuestion("");
-        if (inputMessage === "/quit") {
+        if (inputMessage === "/exit") {
             socketClientConnection(userName, contactNumber, senderPort, receiverPort);
             return;
         } else {
@@ -123,4 +86,4 @@ async function roomMessagingInterface(userName, contactNumber, senderPort, recei
     }
 }
 
-export { startMessagingInterface };
+export { startMessagingInterface, roomMessagingInterface };

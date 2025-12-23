@@ -20,7 +20,7 @@ await socketClientConnection(userName, contactNumber, senderPort, receiverPort);
 
 httpServer.listen(senderPort, async () => {
     console.log(`${message("message")}: server started on port ${senderPort}`);
-    console.log(`\n${message("COMMANDS:")}\n${blue("/quit")} - end conversation\n${blue("/past")} - get past messages\n${blue("/switch")} - change receiver port\n${blue("/schedule")} - send message with delay\n${blue("/create_room")} - create a new chat room\n${blue("/join_room")} - join a chat room\n`);
-    console.log(`${message("message")}: waiting for peer server on port ${receiverPort}...`);
+    console.log(`\n${message("COMMANDS:")}\n${blue("/exit")} - end conversation\n${blue("/history")} - get past messages\n${blue("/switch")} - change receiver port\n${blue("/schedule")} - send message with delay\n${blue("/create_room")} - create a new chat room\n${blue("/join_room")} - join a chat room\n`);
+    console.log(`${message("message")}: your messages will be send to port ${receiverPort}...`);
     await listenOfflineMessages(senderPort);
 });

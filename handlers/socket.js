@@ -6,7 +6,6 @@ import { message, green } from "../config/chalk.js";
 
 function socketServerConnection(socket, userName, contactNumber) {
     const { clientUserName } = socket.handshake.auth;
-    console.log(`${message("message")}: ${clientUserName} connected.`);
     
     socket.on("requestUserInfo", () => {
         socket.emit("userInfo", { userName, contactNumber });
@@ -16,9 +15,7 @@ function socketServerConnection(socket, userName, contactNumber) {
         console.log(`${green(clientUserName)}: ${message}`);
     });
     
-    socket.on("disconnect", () => {
-        console.log(`${message("message")}: ${clientUserName} Disconnected.`);
-    });
+    socket.on("disconnect", () => {});
 }
 
 async function socketClientConnection(userName, contactNumber, senderPort, receiverPort) {

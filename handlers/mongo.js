@@ -71,9 +71,9 @@ async function getConversation(senderContactNumber, receiverContactNumber, recei
         console.log(`\n${message("message")}: CONVERSATION`);
         while (flag) {
             const data = await Conversation.aggregate([
+                { $match: { id: id } },
                 { $unwind: "$conversation" },
                 { $sort: { "conversation.createdAt": -1 } },
-                { $match: { id: id } },
                 { $project: { conversation: "$conversation" } },
                 { $skip: skip * 10 },
                 { $limit: 10 }
@@ -149,6 +149,10 @@ async function getAvailableRooms() {
         }
 
         const requiredRoom = await askQuestion("enter room number: ");
+        if (!(/^[1-9]\d*$/.test(requiredRoom)) || requiredRoom > rooms.length) {
+            console.error(`${error("error")}: invalid room number.`);
+            return null;
+        }
         return rooms[requiredRoom-1];
     } catch (err) {
         console.error(`${error("error")}: ${err.message}`);
