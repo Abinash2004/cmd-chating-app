@@ -1,6 +1,7 @@
 import { httpServer } from "../config/server.js";
 import { askQuestion } from "./readline.js";
-import { addMessage, getConversation } from "../handlers/mongo.js";
+import bcrypt from "bcrypt";
+import { addMessage, createRoom, getAvailableRooms, getConversation } from "../handlers/mongo.js";
 import { requestUserInfo } from "./client.emissions.js";
 import { sendToQueue, joinChatRoom, consumeChatQueue, sendToChatRoom } from "../config/rabbitmq.js";
 import { sendDelayMessage } from "../handlers/rabbitmq.js";
@@ -49,9 +50,27 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
             }
         }
         
-        else if (inputMessage === "/room") {
+        else if (inputMessage === "/create_room") {
+            const roomName = await askQuestion("enter your room name: ");
+            const password = await askQuestion("create password to your room (if not then enter <null>): ");
+            createRoom(roomName,password);
+        }
+        
+        else if (inputMessage === "/join_room") {
+            const room = await getAvailableRooms();
+            if (room === null) continue;
+
+            if (room.password !== "null") {
+                const password = await askQuestion(`enter password for ${room.roomName} chat room: `);
+
+                if (!(await bcrypt.compare(password, room.password))) {
+                    console.error(`${error("error")}: invalid password.`);
+                    continue;
+                }
+            }
+
             if (isSocketClientConnected) socketClient.disconnect();
-            roomMessagingInterface(senderUsername, senderContactNumber, senderPort, receiverPort);
+            roomMessagingInterface(senderUsername,senderContactNumber,senderPort,receiverPort,room.exchangeId);
             return;
         }
 
@@ -78,9 +97,9 @@ async function startMessagingInterface(socketClient, senderUsername, senderConta
     }
 }
 
-async function roomMessagingInterface(userName, contactNumber, senderPort, receiverPort) {
-    const userQueue = `user_${userName}_${contactNumber}`;
-    await joinChatRoom(userQueue);
+async function roomMessagingInterface(userName, contactNumber, senderPort, receiverPort, exchangeId) {
+    const userQueue = `user_${userName}_${contactNumber}_${exchangeId}`;
+    await joinChatRoom(userQueue, exchangeId);
 
     consumeChatQueue(userQueue, (msg) => {
         if (msg.senderContactNumber !== contactNumber) {
@@ -90,7 +109,6 @@ async function roomMessagingInterface(userName, contactNumber, senderPort, recei
 
     while (true) {
         const inputMessage = await askQuestion("");
-
         if (inputMessage === "/quit") {
             socketClientConnection(userName, contactNumber, senderPort, receiverPort);
             return;
@@ -100,7 +118,7 @@ async function roomMessagingInterface(userName, contactNumber, senderPort, recei
                 senderContactNumber: contactNumber,
                 message: inputMessage,
                 createdAt: new Date()
-            });
+            }, exchangeId);
         }
     }
 }

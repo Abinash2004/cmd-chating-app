@@ -25,9 +25,7 @@ async function sendToQueue(queue, message) {
 
 async function sendDelayed(queue, message, delayMs) {
     const delayQueue = `${queue}_delay_${delayMs}`;
-
     await channel.assertExchange("dlx", "direct", { durable: true });
-
     await channel.assertQueue(delayQueue, {
         durable: true,
         arguments: {
@@ -36,10 +34,8 @@ async function sendDelayed(queue, message, delayMs) {
             "x-dead-letter-routing-key": queue
         }
     });
-
     await channel.assertQueue(queue, { durable: true });
     await channel.bindQueue(queue, "dlx", queue);
-
     channel.sendToQueue(
         delayQueue,
         Buffer.from(JSON.stringify(message)),
@@ -62,16 +58,16 @@ async function consumeQueue(queue, callback) {
     }
 }
 
-async function joinChatRoom(userQueue) {
-    const exchange = "chat_room";
+async function joinChatRoom(userQueue, exchangeID) {
+    const exchange = exchangeID;
     await channel.assertExchange(exchange, "fanout", { durable: true });
     await channel.assertQueue(userQueue, { durable: true });
     await channel.bindQueue(userQueue, exchange, "");
     return { exchange, userQueue };
 }
 
-async function sendToChatRoom(message) {
-    const exchange = "chat_room";
+async function sendToChatRoom(message, exchangeID) {
+    const exchange = exchangeID;
     await channel.assertExchange(exchange, "fanout", { durable: true });
     channel.publish(exchange, "", Buffer.from(JSON.stringify(message)));
 }

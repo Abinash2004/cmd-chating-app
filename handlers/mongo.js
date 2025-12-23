@@ -1,10 +1,11 @@
 import bcrypt from "bcrypt";
 import { User } from "../model/user.js";
-import { log, message, error, blue, green } from "../config/chalk.js";
-import { Conversation } from "../model/conversation.js";
-import { validateContactNumber } from "../validators/cmd.js";
+import { Room } from "../model/room.js";
 import { askQuestion } from "../utils/readline.js";
+import { Conversation } from "../model/conversation.js";
 import { formatDateTime } from "../utils/format.date.js";
+import { validateContactNumber } from "../validators/cmd.js";
+import { log, message, error, blue, green } from "../config/chalk.js";
 
 async function authenticateUser(contactNumber) {
     try {
@@ -114,8 +115,50 @@ async function getConversation(senderContactNumber, receiverContactNumber, recei
     }
 }
 
+async function createRoom(roomName, password) {
+    try {
+        const exchangeId = `chat_${roomName}`
+        const hashedPassword = (password.toLowerCase() === "null") ? "null" : await bcrypt.hash(password, 10);
+        const room = await Room.findOne({exchangeId});
+        
+        if(room) {
+            console.error(`${error("error")}: room already exists.`);
+            return;
+        }
+        
+        await Room.create({roomName, exchangeId, password: hashedPassword})
+        console.log(`${message("message")}: ${blue(roomName)} room created successfully.`);
+    } catch (err) {
+        console.error(`${error("error")}: ${err.message}`);
+    }
+}
+
+async function getAvailableRooms() {
+    try {
+        const rooms = await Room.find({});
+        if (rooms[0] === undefined) {
+            console.error(`${error("error")}: no rooms available.`);
+            return null;
+        }
+
+        let count = 1;
+        console.log(`${message("AVAILABLE ROOMS:")}`);
+        for (let room of rooms) {
+            console.log(`${green(count)} - ${blue(room.roomName)}`);
+            count++;
+        }
+
+        const requiredRoom = await askQuestion("enter room number: ");
+        return rooms[requiredRoom-1];
+    } catch (err) {
+        console.error(`${error("error")}: ${err.message}`);
+    }
+}
+
 export {
     authenticateUser,
     addMessage,
-    getConversation
+    getConversation,
+    createRoom,
+    getAvailableRooms
 };
